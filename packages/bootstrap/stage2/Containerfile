@@ -1,4 +1,5 @@
-FROM scratch AS build
+# syntax=ghcr.io/dsseng/docker/dockerfile-upstream:scratch-arch@sha256:d730eed2380ca40dc59272671a916482fb71f4895b596f918013de962055e3c9
+FROM --platform=linux/386 scratch AS build
 ARG GCC_SOURCE
 ARG GCC_VERSION
 ARG LINUX_SOURCE
