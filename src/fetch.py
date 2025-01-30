@@ -1,4 +1,4 @@
-#!/bin/python3
+#!/bin/python3.11
 import glob
 import os
 import sys
