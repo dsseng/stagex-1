@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python3.11
 import os
 from common import CommonUtils
 from common import PackageInfo
@@ -18,7 +18,7 @@ out/{stage}-{name}/index.json: {deps}
 \trm -rf out/{stage}-{name} && \\
 \tmkdir -p out/{stage}-{name} && \\
 \tmkdir -p fetch/{stage}/{origin} && \\
-\tpython3 src/fetch.py {origin} && \\
+\tpython3.11 src/fetch.py {origin} && \\
 \t mkdir -p packages/{stage}/{origin}/fetch && \\
 \t(cp -lR fetch/{stage}/{origin}/* packages/{stage}/{origin}/fetch || true) && \\
 \t$(BUILDER) \\

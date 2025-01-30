@@ -29,7 +29,7 @@ default: compat targets all
 
 targets: out/targets.mk
 out/targets.mk: out $(shell find packages/)
-	python3 src/targets.py > $@
+	python3.11 src/targets.py > $@
 -include out/targets.mk
 
 out:
