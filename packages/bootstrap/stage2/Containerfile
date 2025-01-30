@@ -7,8 +7,6 @@ ARG MUSL_SOURCE
 ARG MUSL_VERSION
 ARG BINUTILS_SOURCE
 ARG BINUTILS_VERSION
-ENV ARCH=x86_64
-ENV TARGET=${ARCH}-linux-musl
 ENV TZ=UTC
 ENV LANG=C.UTF-8
 ENV SOURCE_DATE_EPOCH=1
@@ -17,6 +15,14 @@ ENV SYSROOT=/opt/cross
 ENV PATH=${SYSROOT}/bin:/usr/sbin:/usr/bin:/sbin:/bin
 COPY --from=fetch . .
 COPY --from=stagex/bootstrap-stage1 . /
+
+ARG TARGETARCH
+RUN --network=none <<-EOF
+	echo "export TARGET_ARCH=`echo ${TARGETARCH} | sed 's/amd64/x86_64/' | sed 's/arm64/aarch64/'`" >> /.env
+	. /.env
+	echo "export TARGET=$TARGET_ARCH-linux-musl" >> /.env
+EOF
+
 RUN --network=none <<-EOF
 	set -eux
 	tar -xf ${LINUX_SOURCE}
@@ -31,11 +37,13 @@ EOF
 # Setup sysroot
 WORKDIR ${SYSROOT}
 RUN <<-EOF
+	. /.env
 	mkdir -pv bin lib lib32 include "${TARGET}/bin"
 	ln -sfv . usr
 EOF
-WORKDIR ${SYSROOT}/${TARGET}
 RUN <<-EOF
+	. /.env
+	cd ${SYSROOT}/${TARGET}
 	ln -sfv ../lib lib
 	ln -sfv ../lib32 lib32
 	ln -sfv ../include include
@@ -43,18 +51,21 @@ EOF
 
 # Install musl headers
 WORKDIR /musl-${MUSL_VERSION}
-RUN --network=none \
+RUN --network=none <<-EOF
+	. /.env
 	make \
 		-j$(nproc) \
-		ARCH="${ARCH}" \
+		ARCH="${TARGET_ARCH}" \
 		prefix="" \
 		DESTDIR="${SYSROOT}" \
 		install-headers
+EOF
 
 # Build and install cross binutils
 WORKDIR /build-binutils
 RUN --network=none <<-EOF
 	set -eux
+	. /.env
 	/binutils-${BINUTILS_VERSION}/configure \
 		--target="${TARGET}" \
 		--prefix="" \
@@ -89,6 +100,7 @@ EOF
 WORKDIR /build-gcc
 RUN --network=none <<-EOF
 	set -eux
+	. /.env
 	/gcc-${GCC_VERSION}/configure \
 	--prefix="" \
 	--exec-prefix="" \
@@ -128,10 +140,11 @@ EOF
 # Build and install cross musl
 WORKDIR /build-musl
 RUN --network=none <<-EOF
-	ARCH="${ARCH}" \
-  CC="${TARGET}-gcc" \
-  CROSS_COMPILE="${TARGET}-" \
-  LIBCC="${SYSROOT}/lib/gcc/${TARGET}/${GCC_VERSION}/libgcc.a" \
+	. /.env
+	ARCH="${TARGET_ARCH}" \
+	CC="${TARGET}-gcc" \
+	CROSS_COMPILE="${TARGET}-" \
+	LIBCC="${SYSROOT}/lib/gcc/${TARGET}/${GCC_VERSION}/libgcc.a" \
 	/musl-${MUSL_VERSION}/configure \
 		--host="${TARGET}" \
 		--prefix="" \
@@ -146,15 +159,16 @@ RUN --network=none <<-EOF
 		RANLIB="${TARGET}-ranlib" \
 		DESTDIR="${SYSROOT}" \
 		install-libs
-	rm -f "${SYSROOT}"/lib/ld-musl-${ARCH}.so.1
+	rm -f "${SYSROOT}"/lib/ld-musl-${TARGET_ARCH}.so.1
 	cp -af \
 		"${SYSROOT}/usr/lib/libc.so" \
-		"${SYSROOT}/lib/ld-musl-${ARCH}.so.1"
+		"${SYSROOT}/lib/ld-musl-${TARGET_ARCH}.so.1"
 EOF
 
 # Build and install final libgcc/libstdc++
 WORKDIR /build-gcc
 RUN --network=none <<-EOF
+	. /.env
 	make \
 		-j $(nproc) \
 		-C "${TARGET}/libgcc" \
@@ -175,7 +189,7 @@ EOF
 WORKDIR /linux-${LINUX_VERSION}
 RUN --network=none <<-EOF
 	set -eux
-	make -j$(nproc) ARCH="${ARCH}" headers
+	make -j$(nproc) ARCH="$(echo ${TARGETARCH} | sed 's/amd64/x86_64/')" headers
 	find usr/include ! -name '*.h' -type f -delete
 	cp -af usr/include "${SYSROOT}/usr"
 	cp -Rv usr/include/* "${SYSROOT}/include/"
@@ -184,6 +198,7 @@ RUN rm -rf "${SYSROOT}/_tmp"
 
 WORKDIR /rootfs/${SYSROOT}
 RUN <<-EOF
+	. /.env
 	mv ${SYSROOT}/* .
 	mkdir -p /rootfs/usr/bin
 	for bin_path in $(find bin -name ${TARGET}-*); do
