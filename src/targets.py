@@ -9,12 +9,13 @@ from dataclasses import replace
 from urllib.parse import urlsplit
 
 
+# FIXME: no dependency tracking
 class TargetGenerator(object):
   TARGET_TEMPLATE = """
 .PHONY: {name} {stage}-{name}
 {name}: out/{stage}-{name}/index.json
 {stage}-{name}: out/{stage}-{name}/index.json
-out/{stage}-{name}/index.json: {deps}
+out/{stage}-{name}/index.json:
 \trm -rf out/{stage}-{name} && \\
 \tmkdir -p out/{stage}-{name} && \\
 \tmkdir -p fetch/{stage}/{origin} && \\
@@ -24,9 +25,13 @@ out/{stage}-{name}/index.json: {deps}
 \t$(BUILDER) \\
 \t  build \\
 \t  --ulimit nofile=2048:16384 \\
-\t  --tag stagex/{stage}-{name}:{version} \\
+\t  --tag ghcr.io/siderolabs/stagex/{stage}-{name}:{version} \\
+\t  --tag ghcr.io/siderolabs/stagex/{stage}-{name}:latest \\
+\t  --provenance=false \\
+\t  --build-arg SOURCE_DATE_EPOCH=1 \\
+\t  --build-arg BUILDKIT_MULTI_PLATFORM=1 \\
 \t  --output \\
-\t    name={name},type=oci,rewrite-timestamp=true,force-compression=true,annotation.org.opencontainers.image.version={version},tar=true,dest=- \\
+\t    name={name},type=image,rewrite-timestamp=true,annotation.org.opencontainers.image.version={version},push=true \\
 \t  {context_args} \\
 \t  {build_args} \\
 \t  $(EXTRA_ARGS) \\
@@ -35,8 +40,7 @@ out/{stage}-{name}/index.json: {deps}
 \t  --platform=$(PLATFORM) \\
 \t  --progress=$(PROGRESS) \\
 \t  -f packages/{stage}/{origin}/Containerfile \\
-\t  packages/{stage}/{origin} \\
-\t| tar -C out/{stage}-{name} -mx
+\t  packages/{stage}/{origin}
 """
 
   def __init__(self):
@@ -119,7 +123,7 @@ out/{stage}-{name}/index.json: {deps}
     args: List[str] = list()
     args.append(f"--build-context fetch=fetch/{stage}/{name}")
     for dep in package.deps:
-      args.append(f"--build-context stagex/{dep}=oci-layout://./out/{dep}")
+      args.append(f"--build-context stagex/{dep}=docker-image://ghcr.io/siderolabs/stagex/{dep}")
     return " \\\n\t  ".join(args)
 
   @staticmethod
