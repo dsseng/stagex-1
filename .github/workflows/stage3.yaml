@@ -73,9 +73,21 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Restore stage3 cache
+        id: restore-stage3
+        uses: actions/cache/restore@v4
+        with:
+          path: fetch/bootstrap/stage3
+          key: ${{ hashFiles('packages/bootstrap/stage3/package.toml') }}
       - name: Fetch stage3
         run: |
           python3.11 ./src/fetch.py stage3
+      - name: Save stage3 cache
+        id: save-stage3
+        uses: actions/cache/save@v4
+        with:
+          path: fetch/bootstrap/stage3
+          key: ${{ hashFiles('packages/bootstrap/stage3/package.toml') }}
       - name: Build stage3
         run: |
           make stage3 PROGRESS=plain BUILDER="docker buildx" ${{ inputs.no_cache && 'NOCACHE=1' || '' }} PLATFORM=linux/amd64,linux/arm64
