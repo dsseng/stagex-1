@@ -18,14 +18,6 @@ jobs:
         volumes:
           - /var/lib/buildkit/${{ github.repository }}:/var/lib/buildkit
           - /usr/etc/buildkit/buildkitd.toml:/etc/buildkit/buildkitd.toml
-      docker:
-        image: docker:dind
-        options: --privileged
-        ports:
-          - 22375:2375
-        env:
-          TEST_INTEGRATION_USE_SNAPSHOTTER: "1"
-          DOCKER_TLS_CERTDIR: ""
     steps:
       -
         name: gather-system-info
@@ -58,20 +50,9 @@ jobs:
         run: |
           sudo apt update
           sudo apt install -y python3.11
-      - uses: imjasonh/setup-crane@v0.1
       -
         name: Checkout
         uses: actions/checkout@v4
-      - name: info1
-        run: |
-          docker info
-      - name: switch
-        run: |
-          echo "DOCKER_HOST=tcp://127.0.0.1:22375" >> $GITHUB_ENV
-          sleep 20
-      - name: info2
-        run: |
-          docker info
       -
         name: Set up Docker Buildx
         id: setup-buildx
@@ -86,13 +67,9 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-      - name: Preseed
+      - name: Fetch stage3
         run: |
-          make preseed
-          ./src/preseed-pkg.sh bootstrap-stage2 bootstrap-stage2:latest
+          python3.11 ./src/fetch.py stage3
       - name: Build stage3
         run: |
-          make stage3 PROGRESS=plain PLATFORM=linux/amd64,linux/arm64
-      - name: Push stage3
-        run: |
-          ./src/publish-pkg.sh bootstrap-stage3 latest
+          make stage3 PROGRESS=plain BUILDER="docker buildx" PLATFORM=linux/amd64,linux/arm64
