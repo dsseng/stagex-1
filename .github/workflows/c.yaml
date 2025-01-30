@@ -1,6 +1,12 @@
 name: c
 
-on: workflow_dispatch
+on:
+  workflow_dispatch:
+    inputs:
+      no_cache:
+        description: 'Disable cache'
+        required: true
+        type: boolean
 
 jobs:
   build-push:
@@ -75,34 +81,34 @@ jobs:
           python3.11 ./src/fetch.py filesystem
       - name: Build filesystem
         run: |
-          make filesystem PROGRESS=plain BUILDER="docker buildx" PLATFORM=linux/amd64,linux/arm64
+          make filesystem PROGRESS=plain BUILDER="docker buildx" ${{ inputs.no_cache && 'NOCACHE=1' || '' }} PLATFORM=linux/amd64,linux/arm64
       - name: Fetch binutils
         run: |
           python3.11 ./src/fetch.py binutils
       - name: Build binutils
         run: |
-          make binutils PROGRESS=plain BUILDER="docker buildx" PLATFORM=linux/amd64,linux/arm64
+          make binutils PROGRESS=plain BUILDER="docker buildx" ${{ inputs.no_cache && 'NOCACHE=1' || '' }} PLATFORM=linux/amd64,linux/arm64
       - name: Fetch busybox
         run: |
           python3.11 ./src/fetch.py busybox
       - name: Build busybox
         run: |
-          make busybox PROGRESS=plain BUILDER="docker buildx" PLATFORM=linux/amd64,linux/arm64
+          make busybox PROGRESS=plain BUILDER="docker buildx" ${{ inputs.no_cache && 'NOCACHE=1' || '' }} PLATFORM=linux/amd64,linux/arm64
       - name: Fetch gcc
         run: |
           python3.11 ./src/fetch.py gcc
       - name: Build gcc
         run: |
-          make gcc PROGRESS=plain BUILDER="docker buildx" PLATFORM=linux/amd64,linux/arm64
+          make gcc PROGRESS=plain BUILDER="docker buildx" ${{ inputs.no_cache && 'NOCACHE=1' || '' }} PLATFORM=linux/amd64,linux/arm64
       - name: Fetch make
         run: |
           python3.11 ./src/fetch.py make
       - name: Build make
         run: |
-          make make PROGRESS=plain BUILDER="docker buildx" PLATFORM=linux/amd64,linux/arm64
+          make make PROGRESS=plain BUILDER="docker buildx" ${{ inputs.no_cache && 'NOCACHE=1' || '' }} PLATFORM=linux/amd64,linux/arm64
       - name: Fetch musl
         run: |
           python3.11 ./src/fetch.py musl
       - name: Build musl
         run: |
-          make musl PROGRESS=plain BUILDER="docker buildx" PLATFORM=linux/amd64,linux/arm64
+          make musl PROGRESS=plain BUILDER="docker buildx" ${{ inputs.no_cache && 'NOCACHE=1' || '' }} PLATFORM=linux/amd64,linux/arm64
