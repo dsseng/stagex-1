@@ -1,5 +1,6 @@
-# syntax=ghcr.io/dsseng/docker/dockerfile-upstream:scratch-arch@sha256:d730eed2380ca40dc59272671a916482fb71f4895b596f918013de962055e3c9
-FROM --platform=linux/386 scratch AS build
+FROM --platform=linux/386 stagex/bootstrap-stage2 AS cross-compilers
+
+FROM --platform=linux/386 stagex/bootstrap-stage1 AS build
 ARG GCC_SOURCE
 ARG GCC_VERSION
 ARG LINUX_SOURCE
@@ -20,8 +21,7 @@ ENV LANG=C.UTF-8
 ENV SOURCE_DATE_EPOCH=1
 ENV KCONFIG_NOTIMESTAMP=1
 COPY --from=fetch . .
-COPY --from=stagex/bootstrap-stage1 . /
-COPY --from=stagex/bootstrap-stage2 . /
+COPY --from=cross-compilers / /
 
 ARG TARGETARCH
 RUN --network=none <<-EOF
