@@ -1,6 +1,12 @@
 name: stage1
 
-on: workflow_dispatch
+on:
+  workflow_dispatch:
+    inputs:
+      no_cache:
+        description: 'Disable cache'
+        required: true
+        type: boolean
 
 jobs:
   build-push:
@@ -72,4 +78,4 @@ jobs:
           python3.11 ./src/fetch.py stage1
       - name: Build stage1
         run: |
-          make stage1 PROGRESS=plain BUILDER="docker buildx" PLATFORM=linux/386
+          make stage1 PROGRESS=plain BUILDER="docker buildx" ${{ inputs.no_cache && 'NOCACHE=1' || '' }} PLATFORM=linux/386
