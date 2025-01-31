@@ -88,15 +88,3 @@ jobs:
       - name: Build go
         run: |
           make go PROGRESS=plain BUILDER="docker buildx" ${{ inputs.no_cache && 'NOCACHE=1' || '' }} PLATFORM=linux/amd64,linux/arm64
-      - name: Fetch perl
-        run: |
-          python3.11 ./src/fetch.py perl
-      - name: Build perl
-        run: |
-          make perl PROGRESS=plain BUILDER="docker buildx" ${{ inputs.no_cache && 'NOCACHE=1' || '' }} PLATFORM=linux/amd64,linux/arm64
-      - name: Fetch texinfo
-        run: |
-          python3.11 ./src/fetch.py texinfo
-      - name: Build texinfo
-        run: |
-          make texinfo PROGRESS=plain BUILDER="docker buildx" ${{ inputs.no_cache && 'NOCACHE=1' || '' }} PLATFORM=linux/amd64,linux/arm64
